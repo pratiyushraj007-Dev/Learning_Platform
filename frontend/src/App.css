@@ -1,0 +1,54 @@
+/* App-level utility styles */
+
+/* Smooth page transitions */
+main {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading spinner animation enhancement */
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Prose formatting for AI responses */
+.prose-ai {
+  line-height: 1.7;
+}
+
+.prose-ai p {
+  margin-bottom: 0.75rem;
+}
+
+.prose-ai strong {
+  font-weight: 600;
+}
+
+.prose-ai ul,
+.prose-ai ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-ai li {
+  margin-bottom: 0.25rem;
+}
