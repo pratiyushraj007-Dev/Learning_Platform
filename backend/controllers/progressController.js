@@ -1,6 +1,6 @@
 const Progress = require('../models/Progress');
-const QuizAttempt = require('../models/QuizAttempt');
-const Quiz = require('../models/Quiz');
+const { getStudentQuizStats } = require('../services/progress.service');
+const { getRecommendation } = require('../services/recommendation.service');
 
 const getProgress = async (req, res) => {
   try {
@@ -54,44 +54,35 @@ const getDashboard = async (req, res) => {
   try {
     const studentId = req.user._id;
 
-    const allProgress = await Progress.find({ studentId });
-    const totalCompleted = allProgress.filter((p) => p.completed).length;
-    const totalInProgress = allProgress.filter((p) => !p.completed && p.videoProgress > 0).length;
+    // Lesson progress stats
+    const allLessonProgress = await Progress.find({ studentId });
+    const totalCompleted = allLessonProgress.filter((p) => p.completed).length;
+    const totalInProgress = allLessonProgress.filter((p) => !p.completed && p.videoProgress > 0).length;
 
-    const recentAttempts = await QuizAttempt.find({ studentId })
-      .populate('quizId', 'title topic')
-      .sort('-createdAt')
-      .limit(10);
+    // Quiz progress stats & recommendations
+    const quizStats = await getStudentQuizStats(studentId);
+    const recommendation = await getRecommendation(studentId);
 
-    const allAttempts = await QuizAttempt.find({ studentId }).populate('quizId', 'topic');
-    const topicScores = {};
-
-    allAttempts.forEach((attempt) => {
-      const topic = attempt.quizId?.topic;
-      if (!topic) return;
-      if (!topicScores[topic]) topicScores[topic] = { total: 0, count: 0 };
-      topicScores[topic].total += attempt.score;
-      topicScores[topic].count += 1;
+    const weakTopicsList = (quizStats.weakTopics || []).map((topicName) => {
+      const tp = quizStats.topicPerformance.find((t) => t.topic === topicName);
+      return {
+        topic: topicName,
+        averageScore: tp ? tp.percentage : 0
+      };
     });
-
-    const weakTopics = Object.entries(topicScores)
-      .map(([topic, data]) => ({
-        topic,
-        averageScore: Math.round(data.total / data.count)
-      }))
-      .filter((t) => t.averageScore < 50)
-      .sort((a, b) => a.averageScore - b.averageScore);
 
     const recommendations = [];
 
-    weakTopics.slice(0, 2).forEach((wt) => {
+    if (recommendation && recommendation.recommendedTopic) {
       recommendations.push({
         type: 'practice',
-        message: `Practice more on "${wt.topic}" — your average score is ${wt.averageScore}%`
+        recommendedTopic: recommendation.recommendedTopic,
+        recommendedDifficulty: recommendation.difficulty,
+        message: recommendation.reason
       });
-    });
+    }
 
-    const inProgressLessons = allProgress.filter((p) => !p.completed && p.videoProgress > 0);
+    const inProgressLessons = allLessonProgress.filter((p) => !p.completed && p.videoProgress > 0);
     if (inProgressLessons.length > 0) {
       recommendations.push({
         type: 'continue',
@@ -111,8 +102,16 @@ const getDashboard = async (req, res) => {
       data: {
         totalCompleted,
         totalInProgress,
-        recentAttempts,
-        weakTopics,
+        averageScore: quizStats.averageScore,
+        recentAverageScore: quizStats.recentAverageScore,
+        quizzesAttempted: quizStats.quizzesAttempted,
+        recentAttempts: quizStats.recentAttempts,
+        topicPerformance: quizStats.topicPerformance,
+        weakTopics: weakTopicsList,
+        strongTopics: quizStats.strongTopics,
+        recommendedTopic: recommendation?.recommendedTopic || null,
+        recommendedDifficulty: quizStats.recommendedDifficulty,
+        recommendationReason: recommendation?.reason || null,
         recommendations
       }
     });
@@ -121,4 +120,20 @@ const getDashboard = async (req, res) => {
   }
 };
 
-module.exports = { getProgress, getLessonProgress, saveProgress, getDashboard };
+const getQuizStats = async (req, res) => {
+  try {
+    const studentId = req.user._id;
+    const stats = await getStudentQuizStats(studentId);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = {
+  getProgress,
+  getLessonProgress,
+  saveProgress,
+  getDashboard,
+  getQuizStats
+};

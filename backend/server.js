@@ -32,6 +32,8 @@ app.use('/api/chapters', require('./routes/chapterRoutes'));
 app.use('/api/lessons', require('./routes/lessonRoutes'));
 app.use('/api/quizzes', require('./routes/quizRoutes'));
 app.use('/api/progress', require('./routes/progressRoutes'));
+app.use('/api/results', require('./routes/resultRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/teacher', require('./routes/teacherRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/ai-content', require('./routes/aiContentRoutes'));
