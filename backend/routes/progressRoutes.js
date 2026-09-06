@@ -4,12 +4,14 @@ const {
   getProgress,
   getLessonProgress,
   saveProgress,
-  getDashboard
+  getDashboard,
+  getQuizStats
 } = require('../controllers/progressController');
 
 const router = express.Router();
 
 router.get('/dashboard', protect, authorize('student'), getDashboard);
+router.get('/quiz-stats', protect, authorize('student'), getQuizStats);
 router.get('/lesson/:lessonId', protect, authorize('student'), getLessonProgress);
 router.get('/', protect, authorize('student'), getProgress);
 router.post('/', protect, authorize('student'), saveProgress);
